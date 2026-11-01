@@ -1,0 +1,82 @@
+# Auto-bump for the Homebrew formula. NOT ACTIVE: this file is .yml.txt on purpose.
+#
+# To activate: copy this file to .github/workflows/bump-formula.yml in
+# KaaS-team/homebrew-tap, commit it with a token that has the workflow scope, and
+# add a repository secret named TAP_TOKEN (a fine-grained token with contents and
+# pull-requests write on this repo).
+#
+# Trigger: the release repository (KaaS-team/KaaS-factory) must send a
+# repository_dispatch event when a release is published. Add this step to its
+# release workflow, after the assets are uploaded:
+#
+#   - name: Tell the tap
+#     env:
+#       GH_TOKEN: ${{ secrets.TAP_DISPATCH_TOKEN }}
+#       TAG: ${{ github.ref_name }}
+#     run: |
+#       gh api repos/KaaS-team/homebrew-tap/dispatches \
+#         -f event_type=factory-release -f "client_payload[tag]=$TAG"
+#
+# Manual run: Actions > bump-formula > Run workflow, with a tag such as v6.2.0.
+
+name: bump-formula
+
+on:
+  repository_dispatch:
+    types: [factory-release]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v6.2.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bump-formula
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          PAYLOAD_TAG: ${{ github.event.client_payload.tag }}
+        run: |
+          tag=${INPUT_TAG:-$PAYLOAD_TAG}
+          printf '%s\n' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "bad tag: $tag" >&2; exit 1; }
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: Render the formula
+        run: sh scripts/bump-formula.sh "$TAG"
+
+      - name: Check the formula
+        run: sh tests/formula-check.sh
+
+      - name: Open a pull request if the formula changed
+        env:
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          if git diff --quiet -- Formula/factory.rb; then
+            echo "Formula already at $TAG"
+            exit 0
+          fi
+          branch="bump/factory-$TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add Formula/factory.rb
+          git commit -m "factory $TAG" -m "Bump the formula to $TAG from SHA256SUMS."
+          git push -u origin "$branch"
+          gh pr create --draft --base main --head "$branch" \
+            --title "factory $TAG" \
+            --body "Bump Formula/factory.rb to $TAG. Checksums come from the release SHA256SUMS."
