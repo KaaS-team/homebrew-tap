@@ -8,13 +8,13 @@
 # same bytes, so running it twice is a no-op.
 #
 # Environment:
-#   REPO      release repository (default KaaS-team/KaaS-factory)
+#   REPO      release repository (default KaaS-team/factory)
 #   SUMS_URL  where to fetch SHA256SUMS (default: the release for the tag);
 #             a file:// URL works for local testing
 #   OUT       output path (default Formula/factory.rb)
 set -eu
 
-REPO=${REPO:-KaaS-team/KaaS-factory}
+REPO=${REPO:-KaaS-team/factory}
 OUT=${OUT:-Formula/factory.rb}
 
 die() { printf 'bump-formula: %s\n' "$*" >&2; exit 1; }

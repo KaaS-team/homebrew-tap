@@ -5,7 +5,7 @@
 # add a repository secret named TAP_TOKEN (a fine-grained token with contents and
 # pull-requests write on this repo).
 #
-# Trigger: the release repository (KaaS-team/KaaS-factory) must send a
+# Trigger: the release repository (KaaS-team/factory) must send a
 # repository_dispatch event when a release is published. Add this step to its
 # release workflow, after the assets are uploaded:
 #

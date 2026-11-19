@@ -1,6 +1,6 @@
 # homebrew-tap
 
-This repo is the Homebrew tap for the `factory` command line of [KaaS Factory](https://github.com/KaaS-team/KaaS-factory). It is for people who install the factory with Homebrew, and for maintainers who update the formula when a release ships.
+This repo is the Homebrew tap for the `factory` command line of [KaaS Factory](https://github.com/KaaS-team/factory). It is for people who install the factory with Homebrew, and for maintainers who update the formula when a release ships.
 
 Status: the formula still installs the old Bun/TypeScript factory, release v6.2.0 (binaries named `factory-<os>-<arch>`). It has not been moved to the Go rewrite, whose release archives are named differently, so `scripts/bump-formula.sh` would need changes first.
 
@@ -10,7 +10,7 @@ Status: the formula still installs the old Bun/TypeScript factory, release v6.2.
 brew install KaaS-team/tap/factory
 ```
 
-The formula downloads one binary for your platform (macOS or Linux, arm64 or x64) from the [KaaS-factory releases](https://github.com/KaaS-team/KaaS-factory/releases) and checks its sha256.
+The formula downloads one binary for your platform (macOS or Linux, arm64 or x64) from the [factory releases](https://github.com/KaaS-team/factory/releases) and checks its sha256.
 
 ## First command
 
@@ -48,11 +48,11 @@ No network is used by `make check`.
 sh scripts/bump-formula.sh v6.2.0
 ```
 
-This downloads `SHA256SUMS` from that release of `KaaS-team/KaaS-factory` and rewrites `Formula/factory.rb`. The tag must look like `vX.Y.Z`. Set `REPO` to use another release repository and `OUT` to write somewhere else.
+This downloads `SHA256SUMS` from that release of `KaaS-team/factory` and rewrites `Formula/factory.rb`. The tag must look like `vX.Y.Z`. Set `REPO` to use another release repository and `OUT` to write somewhere else.
 
 An auto-bump workflow is drafted in [docs/auto-bump-workflow.yml.txt](docs/auto-bump-workflow.yml.txt). It is not active. The file explains how to turn it on.
 
 ## Where to go next
 
-- [KaaS Factory](https://github.com/KaaS-team/KaaS-factory) for what the factory does and its commands.
+- [KaaS Factory](https://github.com/KaaS-team/factory) for what the factory does and its commands.
 - [LICENSE](LICENSE): Apache-2.0.
