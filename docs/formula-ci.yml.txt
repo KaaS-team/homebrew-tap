@@ -1,0 +1,85 @@
+name: formula-ci
+
+on:
+  pull_request:
+    paths:
+      - "Formula/**"
+      - ".github/workflows/formula-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: formula-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    outputs:
+      formulae: ${{ steps.list.outputs.formulae }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: List changed formulae
+        id: list
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            files=$(git diff --name-only --diff-filter=AM "$BASE_SHA" HEAD -- 'Formula/*.rb')
+          else
+            files=$(ls Formula/*.rb 2>/dev/null || true)
+          fi
+          names=$(for f in $files; do basename "$f" .rb; done | jq -R . | jq -sc .)
+          echo "formulae=${names:-[]}" >> "$GITHUB_OUTPUT"
+
+  audit:
+    needs: changed
+    if: needs.changed.outputs.formulae != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        formula: ${{ fromJson(needs.changed.outputs.formulae) }}
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@master
+      - uses: actions/checkout@v4
+      - name: Link the tap
+        run: |
+          mkdir -p "$(brew --repository kaas-team)"
+          ln -sfn "$GITHUB_WORKSPACE" "$(brew --repository kaas-team)/homebrew-tap"
+      - name: brew style
+        env:
+          FORMULA: ${{ matrix.formula }}
+        run: brew style "kaas-team/tap/$FORMULA"
+      - name: brew audit
+        env:
+          FORMULA: ${{ matrix.formula }}
+        run: brew audit --strict --online "kaas-team/tap/$FORMULA"
+
+  smoke:
+    needs: changed
+    if: needs.changed.outputs.formulae != '[]'
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        formula: ${{ fromJson(needs.changed.outputs.formulae) }}
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@master
+      - uses: actions/checkout@v4
+      - name: Link the tap
+        run: |
+          mkdir -p "$(brew --repository kaas-team)"
+          ln -sfn "$GITHUB_WORKSPACE" "$(brew --repository kaas-team)/homebrew-tap"
+      - name: brew install --build-from-source
+        env:
+          FORMULA: ${{ matrix.formula }}
+        run: brew install --build-from-source "kaas-team/tap/$FORMULA"
+      - name: brew test
+        env:
+          FORMULA: ${{ matrix.formula }}
+        run: brew test "kaas-team/tap/$FORMULA"
